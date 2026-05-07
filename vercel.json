@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "installCommand": "pnpm install",
+  "functions": {
+    "artifacts/api-server/api/index.ts": {
+      "includeFiles": "artifacts/api-server/data/**"
+    }
+  },
+  "routes": [
+    { "src": "/(.*)", "dest": "/artifacts/api-server/api/index.ts" }
+  ],
+  "env": {
+    "DATA_DIR": "artifacts/api-server/data"
+  }
+}

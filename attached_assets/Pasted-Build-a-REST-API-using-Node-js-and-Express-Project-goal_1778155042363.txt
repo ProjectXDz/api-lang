@@ -1,0 +1,124 @@
+Build a REST API using Node.js and Express.
+
+Project goal:
+Create a multilingual vocabulary learning API for 3 languages:
+- Korean (ko)
+- Japanese (jp)
+- Chinese (cn)
+
+---
+
+1. Languages:
+Support exactly 3 languages:
+- ko (Korean)
+- jp (Japanese)
+- cn (Chinese)
+
+---
+
+2. Levels:
+Each language has levels 1 to 6:
+Example:
+- /api/words?lang=ko&level=1
+- /api/words?lang=jp&level=3
+- /api/words?lang=cn&level=6
+
+---
+
+3. API Endpoint:
+GET /api/words
+
+Query parameters:
+- lang = ko | jp | cn
+- level = 1 - 6
+- limit (optional, default 10)
+
+---
+
+4. Response format:
+Return JSON:
+
+{
+  "lang": "jp",
+  "level": 2,
+  "words": [
+    {
+      "word": "",
+      "meaning": "",
+      "example": ""
+    }
+  ]
+}
+
+---
+
+5. CORE REQUIREMENTS (IMPORTANT):
+
+- NO duplicate words in the entire system
+- Each word must appear only once across all requests
+- Words must be randomly selected every request
+- Shuffle results every time
+- Prevent immediate repetition between requests
+- Maintain in-memory tracking system OR cache to avoid repeats
+
+If words run out:
+- reset pool safely
+- but still avoid repeating last batch immediately
+
+---
+
+6. Data structure:
+Use local files:
+
+/data/ko.json
+/data/jp.json
+/data/cn.json
+
+Each file structured like:
+
+{
+  "1": [
+    { "word": "", "meaning": "", "example": "" }
+  ],
+  "2": [],
+  ...
+  "6": []
+}
+
+---
+
+7. Backend requirements:
+- Use Express
+- Enable CORS
+- Use clean architecture:
+  /routes
+  /controllers
+  /services
+  /data
+
+- Use async/await
+- Keep server.js clean
+
+---
+
+8. Bonus features (if possible):
+- GET /api/health
+- pagination support (page/limit)
+- simple in-memory cache system
+- prevent duplicate across all languages
+
+---
+
+9. Performance:
+- Must be fast
+- No database required
+- JSON file or in-memory storage only
+
+---
+
+10. Code quality:
+- Production-ready structure
+- Modular code
+- Easy to extend for more languages in future
+
+Start generating full working project code.

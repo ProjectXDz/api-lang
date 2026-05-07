@@ -1,0 +1,155 @@
+const express = require(“express”);
+const app = express();
+app.use(express.json());
+
+// ==================== DATA ====================
+// เพิ่มภาษาหรือคำได้เองที่นี่
+const vocabulary = {
+japanese: [
+{ id: “ja_1”, word: “食べる”, reading: “たべる”, meaning: “to eat”, level: 1 },
+{ id: “ja_2”, word: “飲む”, reading: “のむ”, meaning: “to drink”, level: 1 },
+{ id: “ja_3”, word: “走る”, reading: “はしる”, meaning: “to run”, level: 1 },
+{ id: “ja_4”, word: “勉強”, reading: “べんきょう”, meaning: “study”, level: 2 },
+{ id: “ja_5”, word: “図書館”, reading: “としょかん”, meaning: “library”, level: 2 },
+{ id: “ja_6”, word: “経済”, reading: “けいざい”, meaning: “economy”, level: 3 },
+{ id: “ja_7”, word: “環境”, reading: “かんきょう”, meaning: “environment”, level: 3 },
+{ id: “ja_8”, word: “矛盾”, reading: “むじゅん”, meaning: “contradiction”, level: 4 },
+{ id: “ja_9”, word: “曖昧”, reading: “あいまい”, meaning: “vague, ambiguous”, level: 4 },
+{ id: “ja_10”, word: “忖度”, reading: “そんたく”, meaning: “reading the air, inferring intent”, level: 5 },
+],
+english: [
+{ id: “en_1”, word: “apple”, meaning: “a round fruit”, level: 1 },
+{ id: “en_2”, word: “run”, meaning: “to move fast on foot”, level: 1 },
+{ id: “en_3”, word: “beautiful”, meaning: “pleasing to the senses”, level: 2 },
+{ id: “en_4”, word: “ambiguous”, meaning: “having more than one meaning”, level: 3 },
+{ id: “en_5”, word: “ubiquitous”, meaning: “present everywhere”, level: 4 },
+{ id: “en_6”, word: “ephemeral”, meaning: “lasting for a very short time”, level: 4 },
+{ id: “en_7”, word: “serendipity”, meaning: “finding good things by accident”, level: 5 },
+{ id: “en_8”, word: “melancholy”, meaning: “a feeling of pensive sadness”, level: 5 },
+],
+thai: [
+{ id: “th_1”, word: “กิน”, meaning: “to eat”, level: 1 },
+{ id: “th_2”, word: “วิ่ง”, meaning: “to run”, level: 1 },
+{ id: “th_3”, word: “สวยงาม”, meaning: “beautiful”, level: 2 },
+{ id: “th_4”, word: “ประชาธิปไตย”, meaning: “democracy”, level: 3 },
+{ id: “th_5”, word: “เศรษฐกิจ”, meaning: “economy”, level: 3 },
+{ id: “th_6”, word: “วิทยาศาสตร์”, meaning: “science”, level: 4 },
+{ id: “th_7”, word: “ปรัชญา”, meaning: “philosophy”, level: 5 },
+],
+};
+
+// ==================== HELPERS ====================
+
+// Fisher-Yates shuffle
+function shuffle(arr) {
+const a = […arr];
+for (let i = a.length - 1; i > 0; i–) {
+const j = Math.floor(Math.random() * (i + 1));
+[a[i], a[j]] = [a[j], a[i]];
+}
+return a;
+}
+
+function filterWords(lang, level) {
+let words = vocabulary[lang] || [];
+if (level) words = words.filter((w) => w.level === Number(level));
+return words;
+}
+
+// ==================== ROUTES ====================
+
+// GET /api/languages
+// รายชื่อภาษาทั้งหมดที่มี
+app.get(”/api/languages”, (req, res) => {
+const langs = Object.keys(vocabulary).map((lang) => ({
+language: lang,
+total: vocabulary[lang].length,
+levels: […new Set(vocabulary[lang].map((w) => w.level))].sort(),
+}));
+res.json({ languages: langs });
+});
+
+// GET /api/words?lang=japanese&level=2&limit=5
+// ดึงคำศัพท์ตาม lang และ level พร้อม pagination
+app.get(”/api/words”, (req, res) => {
+const { lang = “japanese”, level, offset = 0, limit = 10 } = req.query;
+
+if (!vocabulary[lang]) {
+return res.status(404).json({ error: `Language "${lang}" not found` });
+}
+
+const words = filterWords(lang, level);
+const paginated = words.slice(Number(offset), Number(offset) + Number(limit));
+
+res.json({
+language: lang,
+level: level ? Number(level) : “all”,
+total: words.length,
+offset: Number(offset),
+limit: Number(limit),
+words: paginated,
+});
+});
+
+// GET /api/words/random?lang=japanese&level=3
+// สุ่มคำ 1 คำ
+app.get(”/api/words/random”, (req, res) => {
+const { lang = “japanese”, level } = req.query;
+
+if (!vocabulary[lang]) {
+return res.status(404).json({ error: `Language "${lang}" not found` });
+}
+
+const words = filterWords(lang, level);
+if (words.length === 0) {
+return res.status(404).json({ error: “No words found for this filter” });
+}
+
+const word = words[Math.floor(Math.random() * words.length)];
+res.json({ language: lang, word });
+});
+
+// POST /api/words/random/batch
+// สุ่มคำหลายคำ โดยไม่ซ้ำกัน (no-repeat)
+// Body: { lang, level, count, exclude: [“id1”,“id2”,…] }
+app.post(”/api/words/random/batch”, (req, res) => {
+const { lang = “japanese”, level, count = 5, exclude = [] } = req.body;
+
+if (!vocabulary[lang]) {
+return res.status(404).json({ error: `Language "${lang}" not found` });
+}
+
+let words = filterWords(lang, level);
+
+// กรองคำที่เคยเห็นแล้วออก (no-repeat)
+words = words.filter((w) => !exclude.includes(w.id));
+
+if (words.length === 0) {
+return res.json({
+language: lang,
+words: [],
+exhausted: true,
+message: “All words have been seen. Reset to start over.”,
+});
+}
+
+const picked = shuffle(words).slice(0, Math.min(count, words.length));
+
+res.json({
+language: lang,
+level: level ? Number(level) : “all”,
+words: picked,
+remaining: words.length - picked.length,
+exhausted: false,
+});
+});
+
+// ==================== START ====================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+console.log(`Vocab API running at http://localhost:${PORT}`);
+console.log(`  GET  /api/languages`);
+console.log(`  GET  /api/words?lang=japanese&level=2&limit=5`);
+console.log(`  GET  /api/words/random?lang=thai&level=3`);
+console.log(`  POST /api/words/random/batch`);
+});
