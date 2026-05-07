@@ -1,15 +1,13 @@
 {
   "version": 2,
   "installCommand": "pnpm install",
+  "buildCommand": "pnpm --filter @workspace/api-server run build",
   "functions": {
-    "artifacts/api-server/api/index.ts": {
+    "artifacts/api-server/api/index.js": {
       "includeFiles": "artifacts/api-server/data/**"
     }
   },
   "routes": [
-    { "src": "/(.*)", "dest": "/artifacts/api-server/api/index.ts" }
-  ],
-  "env": {
-    "DATA_DIR": "artifacts/api-server/data"
-  }
+    { "src": "/(.*)", "dest": "/artifacts/api-server/api/index.js" }
+  ]
 }
